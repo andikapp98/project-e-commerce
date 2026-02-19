@@ -1,78 +1,24 @@
-version: "3.8"
-
+version: '3.7'
 services:
-  postgres:
-    image: postgres:16-alpine
-    container_name: project-ecommerce-db
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.9.0
+    container_name: elasticsearch
     environment:
-      POSTGRES_USER: ${DB_USER:-ecommerce_user}
-      POSTGRES_PASSWORD: ${DB_PASSWORD:-ecommerce_password}
-      POSTGRES_DB: ${DB_NAME:-ecommerce_db}
+      - discovery.type=single-node
+      - ELASTIC_PASSWORD=yourpassword
+      - xpack.security.enabled=true
     ports:
-      - "${DB_PORT:-5432}:5432"
+      - "9200:9200"
+      - "9300:9300"
     volumes:
-      - postgres_data:/var/lib/postgresql/data
-      - ./postgres-init:/docker-entrypoint-initdb.d
+      - es_data:/usr/share/elasticsearch/data
     networks:
-      - ecommerce-network
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-ecommerce_user}"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
-  frontend:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
-    container_name: project-ecommerce-frontend
-    environment:
-      DATABASE_URL: postgresql://${DB_USER:-ecommerce_user}:${DB_PASSWORD:-ecommerce_password}@postgres:5432/${DB_NAME:-ecommerce_db}
-    ports:
-      - "3000:3000"
-    depends_on:
-      postgres:
-        condition: service_healthy
-    networks:
-      - ecommerce-network
-    volumes:
-      - ./frontend:/app
-      - /app/.next
-
-  backend:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
-    container_name: project-ecommerce-backend
-    environment:
-      DATABASE_URL: postgresql://${DB_USER:-ecommerce_user}:${DB_PASSWORD:-ecommerce_password}@postgres:5432/${DB_NAME:-ecommerce_db}
-      PORT: 8080
-    ports:
-      - "8080:8080"
-    depends_on:
-      postgres:
-        condition: service_healthy
-    networks:
-      - ecommerce-network
-
-  nginx:
-    image: nginx:alpine
-    container_name: project-ecommerce-nginx
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
-      - ./nginx/ssl:/etc/nginx/ssl:ro
-    depends_on:
-      - frontend
-      - backend
-    networks:
-      - ecommerce-network
+      - ecom_network
 
 volumes:
-  postgres_data:
+  es_data:
+    driver: local
 
 networks:
-  ecommerce-network:
+  ecom_network:
     driver: bridge
