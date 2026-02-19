@@ -7,6 +7,19 @@ generator client {
 
 datasource db {
   provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// User model for authentication
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique @db.VarChar(255)
+  name          String?   @db.VarChar(255)
+  password      String    @db.VarChar(255)
+  role          String    @db.VarChar(50) @default("customer") // "customer", "admin"
+  isActive      Boolean   @default(true)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
 }
 
 // Product model for e-commerce shoes
